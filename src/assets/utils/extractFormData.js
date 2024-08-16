@@ -1,5 +1,4 @@
 const extractFormData = (body, fields)=>{
-    // const fields = ['name', 'price'];
     let dataObject = {};
     let dataArray = []
 

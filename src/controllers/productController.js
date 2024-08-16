@@ -1,12 +1,17 @@
 const extractFormData = require("../assets/utils/extractFormData");
-const index = (req, res)=>{
+const { MongoClient } = require('mongodb');
+const url = process.env.BD_CONNECTION;
+
+const client = new MongoClient(url);
+const index = async (req, res)=>{
+    res.writeHead(200, {"Content-Type": "application/json"})
     res.end("This is the home of the products")
 }
 const showProduct = (req, res, id)=>{
     res.end(`This is a single product to be displayed ${id}`)
 }
 
-const createProduct = (req, res, fields)=>{
+const createProduct = async(req, res, fields)=>{
     res.writeHead(200, {"Content-Type": "application/json"});
     let body = '';
     req
@@ -17,8 +22,29 @@ const createProduct = (req, res, fields)=>{
         .on("data", chunk=>{
             body += chunk;
         })
-        .on('end',()=>{
+        .on('end', async()=>{
             const data = JSON.stringify(extractFormData(body, fields))
+            const d = extractFormData(body, fields)[0]
+            try{
+                await client.connect();
+                const db = client.db("Products");
+                const col = db.collection("Products Table")
+                const collection = [
+                    {
+                        "name": d.name,
+                        "price": d.price,
+                        "year": d.year,
+                        "author": d.author,
+                    }
+                ];
+                const insertData = await col.insertMany(collection);
+                console.log("Data Inserted: ", insertData)
+
+            }catch(error){
+                console.log(error.message)
+            }finally {
+                await client.close();
+            }
             res.end(data);
         });
 }
