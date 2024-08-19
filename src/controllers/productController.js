@@ -15,7 +15,8 @@ const index = async (res)=>{
         const db = client.db("Products");
         const table = db.collection("Products Table");
         const products = await table.find()
-        res.end({data:products})
+        console.log(products)
+        res.end("Products got")
     }catch (error){
         res.end({"message":`Failed to Load Product due to server error: ${error}`});
     }finally {
@@ -54,8 +55,7 @@ const createProduct = async(req, res, fields)=>{
     let body = '';
     req
         .on("error", error=>{
-            console.log(error.message);
-            res.end({message: "Server Error Occurred"})
+            res.end({message: `Server Error Occurred ${error.message}`})
         })
         .on("data", chunk=>{
             body += chunk;
