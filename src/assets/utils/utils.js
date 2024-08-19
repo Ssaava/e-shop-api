@@ -8,7 +8,7 @@ const getId = (req)=>{
  * @example urlWithId(req);
  */
 const urlWithId = (req)=>{
-    return req.url.match(/\/product\/(\d+)/)
+    return req.url.match(/\/product\/([a-fA-F0-9])/)
 }
 module.exports = {
     getId,
