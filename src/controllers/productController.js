@@ -3,14 +3,52 @@ const { MongoClient } = require('mongodb');
 const url = process.env.BD_CONNECTION;
 
 const client = new MongoClient(url);
-const index = async (req, res)=>{
+
+/**
+ * @param res response object to return a response to the front-end
+ * @returns {Promise<void>} returns all products to the user
+ */
+const index = async (res)=>{
     res.writeHead(200, {"Content-Type": "application/json"})
-    res.end("This is the home of the products")
-}
-const showProduct = (req, res, id)=>{
-    res.end(`This is a single product to be displayed ${id}`)
+    try{
+        await client.connect();
+        const db = client.db("Products");
+        const table = db.collection("Products Table");
+        const products = await table.find()
+        res.end({data:products})
+    }catch (error){
+        res.end({"message":`Failed to Load Product due to server error: ${error}`});
+    }finally {
+        await client.close();
+    }
 }
 
+/**
+ * @param res response object to return a response to the front-end
+ * @param id id of the product to ve displayed to the user
+ */
+const showProduct = async(res, id)=>{
+    res.writeHead(200, {"Content-Type": "application/json"});
+    try {
+        await client.connect();
+        const db = client.db("Products");
+        const table = db.collection("Products Table");
+        const product = await table.findOne(id);
+        res.end(product);
+    }catch (error){
+        res.end({"message":`Failed to Load Product due to server error: ${error}`});
+    }finally {
+        await client.close();
+    }
+}
+
+/**
+ *
+ * @param req request object to make server requests
+ * @param res response object to send messages to the final user
+ * @param fields an array containing the values of the name attribute in the input elements of the form section in the front-end
+ * @returns {Promise<void>}
+ */
 const createProduct = async(req, res, fields)=>{
     res.writeHead(200, {"Content-Type": "application/json"});
     let body = '';
@@ -23,41 +61,116 @@ const createProduct = async(req, res, fields)=>{
             body += chunk;
         })
         .on('end', async()=>{
-            const data = JSON.stringify(extractFormData(body, fields))
-            const d = extractFormData(body, fields)[0]
+            const data = extractFormData(body, fields)[0]
             try{
                 await client.connect();
                 const db = client.db("Products");
-                const col = db.collection("Products Table")
+                const table = db.collection("Products Table")
                 const collection = [
                     {
-                        "name": d.name,
-                        "price": d.price,
-                        "year": d.year,
-                        "author": d.author,
+                        "name": data.name,
+                        "price": data.price,
+                        "year": data.year,
+                        "author": data.author,
                     }
                 ];
-                const insertData = await col.insertMany(collection);
-                console.log("Data Inserted: ", insertData)
+              await table.insertMany(collection);
+              res.end({"message": `Successfully inserted new product to the database`});
 
             }catch(error){
-                console.log(error.message)
+                res.end({"message": `Server Error: ${error}`, "reason": "Failed to insert new product to the database"});
             }finally {
                 await client.close();
             }
-            res.end(data);
         });
 }
-const updateProduct = (req, res, id)=>{
-    res.end(`This is the update product with id ${id}`)
+
+/**
+ * @param res response object to return a response to the front-end
+ * @param id id of the product to be updated
+ * @returns {Promise<void>} return the product's details to be updated
+ */
+const productToBeUpdated = async(res, id)=>{
+    res.writeHead(200, {"Content-Type": "application/json"});
+    try {
+        await client.connect();
+        const db = client.db("Products");
+        const table = db.collection("Products Table");
+        const product = await table.findOne(id);
+        res.end(product);
+    }catch (error){
+        res.end({"message":`Failed to Load Product due to server error: ${error}`});
+    }finally {
+        await client.close();
+    }
 }
-const deleteProduct = (req, res, id)=>{
-    res.end(`Deleted product with product id ${id}`);
+
+/**
+ *
+ * @param req request object to make a request to the server
+ * @param res response object to retrieve the information about the product to be updated
+ * @param id this is the id of the product to be updated
+ * @param fields an array containing the values of the name attribute in the input elements of the form section in the front-end
+ */
+const updateProduct = async(req, res, id, fields)=>{
+    res.writeHead(200, {"Content-Type": "application/json"});
+    let body = '';
+    req
+        .on("error", error=>{
+            console.log(error.message);
+            res.end({message: "Server Error Occurred"})
+        })
+        .on("data", chunk=>{
+            body += chunk;
+        })
+        .on('end', async()=>{
+            const data = extractFormData(body, fields)[0]
+            try {
+                await client.connect();
+                const db = client.db("Products");
+                const table = db.collection("Products Table");
+                const product = await table.findOne(id);
+                const collection = [
+                    {
+                        "name": product.name || data.name,
+                        "price": product.price || data.price,
+                        "year": product.year || data.year,
+                        "author": product.author || data.author,
+                    }
+                ];
+                await table.updateOne(id, collection)
+                res.end({"message": `Successfully updated the product with id ${id}`});
+            }catch (error){
+                res.end({"message":`Failed to Load Product due to server error: ${error}`});
+            }finally {
+                await client.close();
+            }
+        });
+}
+
+/**
+ * @param res response object to send a response message to the user
+ * @param id id of the product to be deleted
+ * @returns {Promise<void>} function return either a success of fail message
+ */
+const deleteProduct = async(res, id)=>{
+    try{
+        await client.connect();
+        const db = client.db("Products");
+        const table = db.collection("Products Table");
+        await table.deleteOne(id);
+        res.end({"message":`Successfully deleted the product with the id: ${id}`});
+    }catch (error){
+        res.end({"message": `Server error ${error}`});
+    }finally {
+        await client.close();
+    }
 }
 module.exports = {
     index,
     showProduct,
     createProduct,
     updateProduct,
-    deleteProduct
+    deleteProduct,
+    productToBeUpdated
 }
