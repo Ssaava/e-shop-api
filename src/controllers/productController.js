@@ -1,46 +1,51 @@
 const extractFormData = require("../assets/utils/extractFormData");
-const { MongoClient } = require('mongodb');
+const { MongoClient, ObjectId} = require('mongodb');
 const url = process.env.BD_CONNECTION;
 
 const client = new MongoClient(url);
 
 /**
+ * @param req
  * @param res response object to return a response to the front-end
  * @returns {Promise<void>} returns all products to the user
  */
-const index = async (res)=>{
+const index = async (req,res)=>{
     res.writeHead(200, {"Content-Type": "application/json"})
     try{
         await client.connect();
-        const db = client.db("Products");
-        const table = db.collection("Products Table");
-        const products = await table.find()
-        console.log(products)
-        res.end("Products got")
+        const db = client.db("e-shop");
+        const table = db.collection("Products");
+        const products = await table.find({}).toArray();
+        res.end(JSON.stringify(products));
     }catch (error){
-        res.end({"message":`Failed to Load Product due to server error: ${error}`});
+        res.end(JSON.stringify({"message":`Failed to Load Product due to server error: ${error}`}));
     }finally {
         await client.close();
     }
 }
 
 /**
+ *
  * @param res response object to return a response to the front-end
  * @param id id of the product to ve displayed to the user
  */
 const showProduct = async(res, id)=>{
     res.writeHead(200, {"Content-Type": "application/json"});
+
     try {
+        id = new ObjectId(id);
         await client.connect();
-        const db = client.db("Products");
-        const table = db.collection("Products Table");
-        const product = await table.findOne(id);
-        res.end(product);
+        const db = client.db("e-shop");
+        const table = db.collection("Products");
+        const product = await table.findOne({_id: id});
+        res.end(JSON.stringify(product));
     }catch (error){
-        res.end({"message":`Failed to Load Product due to server error: ${error}`});
+        // res.writeHead(404, {"Content-Type": "application/json"})
+        res.end(JSON.stringify({"message":`Product not found ${error.message}`}));
     }finally {
         await client.close();
     }
+
 }
 
 /**
@@ -57,15 +62,15 @@ const createProduct = async(req, res, fields)=>{
         .on("error", error=>{
             res.end({message: `Server Error Occurred ${error.message}`})
         })
-        .on("data", chunk=>{
+        .on("data", chunk => {
             body += chunk;
         })
-        .on('end', async()=>{
+        .on('end', async() => {
             const data = extractFormData(body, fields)[0]
             try{
                 await client.connect();
-                const db = client.db("Products");
-                const table = db.collection("Products Table")
+                const db = client.db("e-shop");
+                const table = db.collection("Products")
                 const collection = [
                     {
                         "name": data.name,
@@ -75,10 +80,10 @@ const createProduct = async(req, res, fields)=>{
                     }
                 ];
               await table.insertMany(collection);
-              res.end({"message": `Successfully inserted new product to the database`});
+              res.end(JSON.stringify({"message": `Successfully inserted new product to the database`}));
 
             }catch(error){
-                res.end({"message": `Server Error: ${error}`, "reason": "Failed to insert new product to the database"});
+                res.end(JSON.stringify({"message": `Server Error: ${error}`, "reason": "Failed to insert new product to the database"}));
             }finally {
                 await client.close();
             }
@@ -93,13 +98,14 @@ const createProduct = async(req, res, fields)=>{
 const productToBeUpdated = async(res, id)=>{
     res.writeHead(200, {"Content-Type": "application/json"});
     try {
+        id = new ObjectId(id);
         await client.connect();
-        const db = client.db("Products");
-        const table = db.collection("Products Table");
-        const product = await table.findOne(id);
-        res.end(product);
+        const db = client.db("e-shop");
+        const table = db.collection("Products");
+        const product = await table.findOne({_id: id});
+        res.end(JSON.stringify(product));
     }catch (error){
-        res.end({"message":`Failed to Load Product due to server error: ${error}`});
+        res.end(JSON.stringify({"message":`Failed to Load Product due to server error: ${error}`}));
     }finally {
         await client.close();
     }
@@ -117,8 +123,7 @@ const updateProduct = async(req, res, id, fields)=>{
     let body = '';
     req
         .on("error", error=>{
-            console.log(error.message);
-            res.end({message: "Server Error Occurred"})
+            res.end(JSON.stringify({message: `Server Error Occurred ${error.message}`}));
         })
         .on("data", chunk=>{
             body += chunk;
@@ -127,8 +132,8 @@ const updateProduct = async(req, res, id, fields)=>{
             const data = extractFormData(body, fields)[0]
             try {
                 await client.connect();
-                const db = client.db("Products");
-                const table = db.collection("Products Table");
+                const db = client.db("e-shop");
+                const table = db.collection("Products");
                 const product = await table.findOne(id);
                 const collection = [
                     {
@@ -139,9 +144,9 @@ const updateProduct = async(req, res, id, fields)=>{
                     }
                 ];
                 await table.updateOne(id, collection)
-                res.end({"message": `Successfully updated the product with id ${id}`});
+                res.end(JSON.stringify({"message": `Successfully updated the product with id ${id}`}));
             }catch (error){
-                res.end({"message":`Failed to Load Product due to server error: ${error}`});
+                res.end(JSON.stringify({"message":`Failed to Load Product due to server error: ${error}`}));
             }finally {
                 await client.close();
             }
@@ -153,15 +158,21 @@ const updateProduct = async(req, res, id, fields)=>{
  * @param id id of the product to be deleted
  * @returns {Promise<void>} function return either a success of fail message
  */
-const deleteProduct = async(res, id)=>{
+const deleteProduct = async (res, id)=>{
+    res.writeHead(200, {"Content-Type": "application/json"});
     try{
+        id = new ObjectId(id);
         await client.connect();
-        const db = client.db("Products");
-        const table = db.collection("Products Table");
-        await table.deleteOne(id);
-        res.end({"message":`Successfully deleted the product with the id: ${id}`});
+        const db = client.db("e-shop");
+        const table = db.collection("Products");
+        const deleteResults = await table.deleteOne({_id: id});
+        if(deleteResults.deletedCount === 1){
+            res.end(JSON.stringify({"message":`Successfully deleted the product with the id: ${id}`}));
+        }else{
+            res.end(JSON.stringify({"message":`Product with id: ${id} is not found`}));
+        }
     }catch (error){
-        res.end({"message": `Server error ${error}`});
+        res.end(JSON.stringify({"message":`Failed to delete the product with the id: ${id}`}));
     }finally {
         await client.close();
     }

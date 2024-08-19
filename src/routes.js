@@ -3,7 +3,7 @@ const {index, createProduct, showProduct, updateProduct, deleteProduct, productT
 const {getId, urlWithId} = require("./assets/utils/utils");
 const routes = async (req, res)=>{
     if(req.method === "GET" && req.url === "/"){
-       await index(res);
+       await index(req, res);
     }else if(req.method==="GET" && urlWithId(req)){ // route to display specific product
         const id = getId(req);
         await showProduct(res, id);
