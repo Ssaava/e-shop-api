@@ -1,5 +1,15 @@
 erDiagram
-    users ||--o{ orders : places
+    users ||--o{ orders : "places"
+    users ||--o{ cart : "manages"
+    users ||--o{ wishlist : "manages"
+    users ||--o{ reviews : "writes"
+    products ||--o{ cart : "added_to"
+    products ||--o{ wishlist : "added_to"
+    products ||--o{ reviews : "has"
+    products ||--o{ order_items : "included_in"
+    categories ||--o{ products : "belongs_to"
+    orders ||--o{ order_items : "contains"
+
     users {
         int id PK
         string name
@@ -7,16 +17,39 @@ erDiagram
         string password
         string address
         string phone
+        string role "user or admin"
         datetime createdAt
         datetime updatedAt
     }
 
-    orders ||--o{ order_items : contains
+    products {
+        int id PK
+        string name
+        string description
+        float price
+        int stock
+        string imageUrl
+        int categoryId FK
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    cart {
+        int id PK
+        int userId FK
+        int productId FK
+        int quantity
+        datetime createdAt
+        datetime updatedAt
+    }
+
     orders {
         int id PK
         int userId FK
-        string status
+        string status "pending, shipped, delivered, cancelled"
         float totalAmount
+        string paymentMethod
+        string shippingAddress
         datetime createdAt
         datetime updatedAt
     }
@@ -29,21 +62,28 @@ erDiagram
         float price
     }
 
-    products ||--o{ order_items : included_in
-    products {
-        int id PK
-        string name
-        string description
-        float price
-        int stock
-        string imageUrl
-        datetime createdAt
-        datetime updatedAt
-    }
-
-    categories ||--o{ products : belongs_to
     categories {
         int id PK
         string name
         string description
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    wishlist {
+        int id PK
+        int userId FK
+        int productId FK
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    reviews {
+        int id PK
+        int userId FK
+        int productId FK
+        int rating "1 to 5"
+        string comment
+        datetime createdAt
+        datetime updatedAt
     }
