@@ -98,4 +98,4 @@ Ecommerce-App/
 └── README.md
 ```
 
-Project by [Ssaava Emma](https://x.com/ssava_emai)
+Project by [Ssaava Emma](https://x.com/ssava_ema)
