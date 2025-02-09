@@ -9,7 +9,7 @@ erDiagram
         string phone
         datetime createdAt
         datetime updatedAt
-    }}
+    }
 
     orders ||--o{ order_items : contains
     orders {
@@ -19,7 +19,7 @@ erDiagram
         float totalAmount
         datetime createdAt
         datetime updatedAt
-    }}
+    }
 
     order_items {
         int id PK
@@ -39,11 +39,11 @@ erDiagram
         string imageUrl
         datetime createdAt
         datetime updatedAt
-    }}
+    }
 
     categories ||--o{ products : belongs_to
     categories {
         int id PK
         string name
         string description
-    }}
+    }
