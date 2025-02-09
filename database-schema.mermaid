@@ -1,0 +1,49 @@
+erDiagram
+    users ||--o{ orders : places
+    users {
+        int id PK
+        string name
+        string email
+        string password
+        string address
+        string phone
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    orders ||--o{ order_items : contains
+    orders {
+        int id PK
+        int userId FK
+        string status
+        float totalAmount
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    order_items {
+        int id PK
+        int orderId FK
+        int productId FK
+        int quantity
+        float price
+    }
+
+    products ||--o{ order_items : included_in
+    products {
+        int id PK
+        string name
+        string description
+        float price
+        int stock
+        string imageUrl
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    categories ||--o{ products : belongs_to
+    categories {
+        int id PK
+        string name
+        string description
+    }
